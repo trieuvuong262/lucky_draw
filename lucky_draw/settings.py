@@ -64,17 +64,29 @@ WSGI_APPLICATION = 'lucky_draw.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'trieuvuong1997$lucky_draw',        # <--- Thay tên DB đầy đủ của bạn
-        'USER': 'trieuvuong1997',                   # <--- Thay username của bạn
-        'PASSWORD': '123123sS',    # <--- Thay mật khẩu DB của bạn
-        'HOST': 'trieuvuong1997.mysql.pythonanywhere-services.com', # <--- QUAN TRỌNG NHẤT: Copy y nguyên dòng Database host address
-        'PORT': '3306',
+if '/home/trieuvuong1997' in str(BASE_DIR):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'trieuvuong1997$lucky_draw',
+            'USER': 'trieuvuong1997',
+            'PASSWORD': '123123sS',  # Password trên Server
+            'HOST': 'trieuvuong1997.mysql.pythonanywhere-services.com',
+            'PORT': '3306',
+        }
     }
-}
-
+# 2. Ngược lại (không tìm thấy đường dẫn trên) -> Dùng Database Local
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'lucky_draw_db',      # Tên DB bạn vừa tạo ở máy tính
+            'USER': 'root',            # User mặc định của XAMPP/Local
+            'PASSWORD': '123123',            # Pass mặc định (thường để trống)
+            'HOST': '127.0.0.1',       # Localhost
+            'PORT': '3306',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
