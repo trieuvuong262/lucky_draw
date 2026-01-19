@@ -434,14 +434,14 @@ const soundStart = new Audio('/media/sounds/start.mp3');
         
         // Cấu hình chung cho các hạt pháo
         var defaults = { 
-            startVelocity: 80,    // Bắn mạnh để bay lên cao
+            startVelocity: 70,    // Bắn mạnh để bay lên cao
             spread: 70,           // Góc tỏa ra vừa phải để tạo hình chùm
-            ticks: 400,           // Tồn tại lâu để kịp rơi xuống đất
+            ticks: 350,           // Tồn tại lâu để kịp rơi xuống đất
             gravity: 0.5,         // <--- QUAN TRỌNG: Trọng lực thấp để rơi chậm
             zIndex: 9999,         // Hiện trên Modal
             shapes: ['square', 'circle', 'star'], 
             colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffD700', '#ffffff', '#ff8c00'],
-            scalar: 1.2           // Kích thước hạt to hơn một chút nhìn cho đã
+            scalar: 1           // Kích thước hạt to hơn một chút nhìn cho đã
         };
 
         // Vòng lặp bắn liên tục
