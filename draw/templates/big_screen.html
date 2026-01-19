@@ -478,6 +478,24 @@ const soundStart = new Audio('/media/sounds/start.mp3');
     }
 
     function resetSpinState() { isSpinning = false; $('.user-box').removeClass('highlight'); $('#draggable-btn').prop('disabled', true); $('#draggable-btn span').text('CHỌN GIẢI'); selectedPrizeId = null; }
+
+// --- 8. SỰ KIỆN BÀN PHÍM (SPACE ĐỂ QUAY / ĐÓNG MODAL) ---
+    document.addEventListener('keydown', function(event) {
+        // Kiểm tra xem phím nhấn có phải là Space không
+        if (event.code === 'Space' || event.key === ' ') {
+            
+            event.preventDefault(); // Quan trọng: Ngăn trang web bị cuộn xuống khi nhấn Space
+
+            // TRƯỜNG HỢP 1: Nếu bảng chúc mừng đang hiện -> Nhấn Space để ĐÓNG
+            if ($('#winner-modal').is(':visible')) {
+                closeModal();
+            } 
+            // TRƯỜNG HỢP 2: Nếu nút quay đang sáng (không bị disable) -> Nhấn Space để QUAY
+            else if (!$('#draggable-btn').prop('disabled')) {
+                startSpin();
+            }
+        }
+    });
 </script>
 </body>
 </html>
