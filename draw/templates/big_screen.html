@@ -314,18 +314,35 @@ const soundStart = new Audio('/media/sounds/start.mp3');
     }
 
     // --- 6. LOGIC GAME & HIỆU ỨNG ---
-    function toggleSidebar() { 
-        $('#sidebar').toggleClass('open'); 
-        const icon = $('#sidebar').hasClass('open') ? 'fa-xmark' : 'fa-bars'; 
-        $('#toggle-btn i').attr('class', `fa-solid ${icon}`); 
+    function toggleSidebar() {
+        // Đảo trạng thái class open
+        $('#sidebar').toggleClass('open');
         
-        // --- THÊM DÒNG NÀY ---
-        // Reset vị trí bàn phím khi đóng/mở
+        // Đổi icon
+        const icon = $('#sidebar').hasClass('open') ? 'fa-xmark' : 'fa-bars';
+        $('#toggle-btn i').attr('class', `fa-solid ${icon}`);
+
+        // --- XỬ LÝ LOGIC ---
         if ($('#sidebar').hasClass('open')) {
-            currentFocusIndex = -1; 
+            // TRƯỜNG HỢP MỞ MENU:
+            
+            // 1. Reset vị trí chọn phím về đầu
+            currentFocusIndex = -1;
             $('.prize-item').removeClass('key-focus');
+
+            // 2. Đảm bảo nút hiện rõ (nếu nó đang ẩn) và hủy đếm ngược ẩn
+            $toggleBtn.removeClass('btn-hidden');
+            clearTimeout(btnHideTimer);
+
+        } else {
+            // TRƯỜNG HỢP ĐÓNG MENU:
+            
+            // --- SỬA LỖI CỦA BẠN TẠI ĐÂY ---
+            // Khi menu đóng lại (do bấm Tab hoặc do chọn giải xong tự đóng),
+            // ta kích hoạt ngay bộ đếm 3 giây để ẩn nút.
+            startBtnTimer(); 
         }
-    }    
+    }
     function selectPrize(id, name, remaining) {
         if (isSpinning || remaining <= 0) return;
         $('.prize-item').removeClass('active'); $(`#prize-${id}`).addClass('active'); selectedPrizeId = id; $('#draggable-btn span').text(`QUAY: ${name}`); $('#draggable-btn').prop('disabled', false); if($('#sidebar').hasClass('open')) toggleSidebar();
