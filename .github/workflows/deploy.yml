@@ -16,6 +16,7 @@ jobs:
       with:
         host: ${{ secrets.PA_HOST }}
         username: ${{ secrets.PA_USERNAME }}
+        password: ${{ secrets.PA_PASSWORD }}
         key: ${{ secrets.PA_SSH_KEY }}
         script: |
           # 1. Vào thư mục
@@ -35,3 +36,4 @@ jobs:
           # Lưu ý: Tên file thường là: ten_nick_pythonanywhere_com_wsgi.py
           # Bạn có thể dùng lệnh này để tự động tìm và touch file đó:
           touch /var/www/*_wsgi.py
+
