@@ -117,10 +117,20 @@
             background: var(--accent-color); color: white; border: none;
             width: 50px; height: 50px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 24px;
         }
+        #toggle-btn.btn-hidden {
+            opacity: 0;           /* Ẩn hoàn toàn */
+            pointer-events: none; /* Quan trọng: Cho phép click xuyên qua nút vào ô tên bên dưới */
+            transform: translateY(-20px); /* Dịch nhẹ lên trên cho đẹp */
+        }
         .prize-item { padding: 15px 20px; margin: 10px 15px; border: 1px solid #eee; border-radius: 12px; cursor: pointer; }
         .prize-item.active { background: var(--accent-color); color: white; border-color: transparent; }
         .prize-item.disabled { opacity: 0.6; background: #f5f5f5; cursor: not-allowed; }
-
+        .prize-item.key-focus {
+            border: 2px solid var(--accent-color); /* Viền đậm màu xanh */
+            background-color: rgba(0, 144, 161, 0.1); /* Nền xanh nhạt */
+            transform: translateX(10px); /* Đẩy nhẹ sang phải cho sinh động */
+            transition: all 0.2s ease;
+        }
         #winner-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }
         #winner-name { font-size: 7vh; font-weight: 900; color: var(--text-color); margin: 10px 0; text-align: center; text-transform: uppercase; }
 
@@ -304,8 +314,18 @@ const soundStart = new Audio('/media/sounds/start.mp3');
     }
 
     // --- 6. LOGIC GAME & HIỆU ỨNG ---
-    function toggleSidebar() { $('#sidebar').toggleClass('open'); const icon = $('#sidebar').hasClass('open') ? 'fa-xmark' : 'fa-bars'; $('#toggle-btn i').attr('class', `fa-solid ${icon}`); }
-    
+    function toggleSidebar() { 
+        $('#sidebar').toggleClass('open'); 
+        const icon = $('#sidebar').hasClass('open') ? 'fa-xmark' : 'fa-bars'; 
+        $('#toggle-btn i').attr('class', `fa-solid ${icon}`); 
+        
+        // --- THÊM DÒNG NÀY ---
+        // Reset vị trí bàn phím khi đóng/mở
+        if ($('#sidebar').hasClass('open')) {
+            currentFocusIndex = -1; 
+            $('.prize-item').removeClass('key-focus');
+        }
+    }    
     function selectPrize(id, name, remaining) {
         if (isSpinning || remaining <= 0) return;
         $('.prize-item').removeClass('active'); $(`#prize-${id}`).addClass('active'); selectedPrizeId = id; $('#draggable-btn span').text(`QUAY: ${name}`); $('#draggable-btn').prop('disabled', false); if($('#sidebar').hasClass('open')) toggleSidebar();
@@ -496,6 +516,134 @@ const soundStart = new Audio('/media/sounds/start.mp3');
             }
         }
     });
+
+// --- 9. LOGIC ẨN/HIỆN NÚT MENU THÔNG MINH ---
+    let btnHideTimer;
+    const $toggleBtn = $('#toggle-btn');
+
+    function startBtnTimer() {
+        // Xóa đếm ngược cũ (nếu có)
+        clearTimeout(btnHideTimer);
+        
+        // Bắt đầu đếm 3 giây
+        btnHideTimer = setTimeout(() => {
+            // Chỉ ẩn nút khi Sidebar đang ĐÓNG (để tránh mất nút tắt khi đang mở menu)
+            if (!$('#sidebar').hasClass('open')) {
+                $toggleBtn.addClass('btn-hidden');
+            }
+        }, 1500);
+    }
+
+    function showBtn() {
+        $toggleBtn.removeClass('btn-hidden');
+        startBtnTimer(); // Hiện xong thì lại bắt đầu đếm ngược để ẩn tiếp
+    }
+
+    // 1. Khi mới vào trang -> Bắt đầu đếm để ẩn
+    startBtnTimer();
+
+    // 2. Sự kiện: Khi click nút -> Vẫn đếm ngược (để sau khi bấm xong nó tự ẩn)
+    $toggleBtn.on('click', function() {
+        showBtn();
+    });
+
+    // 3. Sự kiện: Khi di chuột vào nút -> Giữ nút luôn hiện (hủy đếm)
+    $toggleBtn.on('mouseenter', function() {
+        clearTimeout(btnHideTimer);
+        $toggleBtn.removeClass('btn-hidden');
+    });
+
+    // 4. Sự kiện: Khi chuột rời khỏi nút -> Bắt đầu đếm 3s để ẩn
+    $toggleBtn.on('mouseleave', startBtnTimer);
+
+    // 5. QUAN TRỌNG: Làm sao để gọi nút quay lại khi nó đã ẩn?
+    // Giải pháp: Khi người dùng rê chuột vào vùng GÓC TRÊN TRÁI (150x150px), nút sẽ hiện lại.
+    $(document).on('mousemove', function(e) {
+        if (e.clientX < 150 && e.clientY < 150) {
+            // Nếu nút đang ẩn thì mới gọi hàm hiện (để tối ưu hiệu năng)
+            if ($toggleBtn.hasClass('btn-hidden')) {
+                showBtn();
+            }
+        }
+    });
+
+
+// --- 10. SỰ KIỆN PHÍM TAB (ĐỂ BẬT/TẮT MENU NHANH) ---
+    document.addEventListener('keydown', function(event) {
+        // Kiểm tra nếu phím nhấn là Tab
+        if (event.code === 'Tab' || event.key === 'Tab') {
+            
+            event.preventDefault(); // QUAN TRỌNG: Ngăn trình duyệt chuyển focus sang nút khác
+            
+            // Bước 1: Nếu nút đang bị ẩn (do để lâu không dùng), hãy hiện nó lên trước
+            if ($('#toggle-btn').hasClass('btn-hidden')) {
+                showBtn(); 
+            }
+
+            // Bước 2: Kích hoạt sự kiện click vào nút
+            $('#toggle-btn').click();
+        }
+    });
+
+
+// --- 11. ĐIỀU HƯỚNG MENU BẰNG PHÍM MŨI TÊN & ENTER ---
+    let currentFocusIndex = -1; // -1 nghĩa là chưa chọn cái nào
+
+    document.addEventListener('keydown', function(event) {
+        // Chỉ hoạt động khi Sidebar đang MỞ
+        if (!$('#sidebar').hasClass('open')) return;
+
+        // Lấy danh sách các giải thưởng CÒN HIỆU LỰC (bỏ qua giải đã hết/disabled)
+        const $items = $('.prize-item:not(.disabled)');
+        
+        if ($items.length === 0) return;
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault(); // Ngăn cuộn trang web
+            currentFocusIndex++;
+            if (currentFocusIndex >= $items.length) currentFocusIndex = 0; // Vòng lại đầu
+            updateFocusVisuals($items);
+        } 
+        else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            currentFocusIndex--;
+            if (currentFocusIndex < 0) currentFocusIndex = $items.length - 1; // Vòng xuống cuối
+            updateFocusVisuals($items);
+        } 
+        else if (event.key === 'Enter') {
+            event.preventDefault();
+            if (currentFocusIndex > -1 && $items[currentFocusIndex]) {
+                // Giả lập cú click chuột vào phần tử đó
+                $items[currentFocusIndex].click();
+                
+                // Hiệu ứng nháy nhẹ để biết đã nhận lệnh
+                $($items[currentFocusIndex]).fadeOut(100).fadeIn(100);
+            }
+        }
+    });
+
+    // Hàm cập nhật giao diện khi bấm phím
+    function updateFocusVisuals($items) {
+        // Xóa class focus ở tất cả các mục
+        $('.prize-item').removeClass('key-focus');
+        
+        // Thêm class focus vào mục hiện tại
+        const $focusedItem = $($items[currentFocusIndex]);
+        $focusedItem.addClass('key-focus');
+
+        // QUAN TRỌNG: Tự động cuộn thanh trượt nếu mục đó bị khuất
+        $focusedItem[0].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+        });
+    }
+
+    // Tinh chỉnh lại sự kiện TAB để Reset vị trí về đầu mỗi khi mở menu
+    // (Bạn sửa lại đoạn code phím Tab ở bước trước một chút như sau)
+    const oldTabEvent = document.onkeydown; // Lưu lại logic cũ nếu cần (hoặc chỉ cần thay thế đoạn Tab cũ)
+    
+    // ... Hoặc đơn giản là thêm dòng này vào bên trong hàm toggleSidebar() hiện có:
+    // currentFocusIndex = -1; $('.prize-item').removeClass('key-focus');
 </script>
 </body>
 </html>
