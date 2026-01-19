@@ -153,11 +153,9 @@
         <div style="overflow-y:auto; flex:1; padding-bottom: 20px;">
             {% for prize in prizes %}
             <div class="prize-item {% if prize.remaining_count == 0 %}disabled{% endif %}" 
-                id="prize-{{ prize.id }}" 
-                data-id="{{ prize.id }}" 
-                data-name="{{ prize.name|escapejs }}" 
-                data-count="{{ prize.remaining_count }}"
-                onclick="handlePrizeClick(this)"> <div style="font-weight:bold; font-size:1.1em">{{ prize.name }}</div>
+                 id="prize-{{ prize.id }}" 
+                 onclick="selectPrize({{ prize.id }}, '{{ prize.name }}', {{ prize.remaining_count }})">
+                <div style="font-weight:bold; font-size:1.1em">{{ prize.name }}</div>
                 <div style="font-size:0.9em; margin-top:5px; display:flex; justify-content:space-between">
                     <span>Còn lại:</span> <span id="count-{{ prize.id }}" style="font-weight:bold">{{ prize.remaining_count }}</span>
                 </div>
