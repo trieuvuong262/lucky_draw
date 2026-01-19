@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check-in Lucky Draw</title>
+    <style>
+        body {
+            background-color: #f0f8ff;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; margin: 0; color: rgb(0, 105, 145);
+        }
+        .card {
+            background: white; border: 1px solid rgb(162, 218, 221);
+            border-radius: 16px; padding: 30px; width: 90%; max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 105, 145, 0.1); text-align: center;
+        }
+        h2 { margin-top: 0; color: rgb(0, 144, 161); text-transform: uppercase; }
+        p { margin-bottom: 25px; color: #666; }
+        
+        input, select {
+            width: 100%; padding: 15px; margin: 10px 0;
+            border: 1px solid #cceeff; border-radius: 8px;
+            box-sizing: border-box; background: #f9fcff;
+            font-size: 16px; color: #333; appearance: none;
+        }
+        input:focus, select:focus { outline: none; border-color: rgb(0, 144, 161); background: white; }
+        
+        .select-wrapper { position: relative; }
+        .select-wrapper::after {
+            content: '▼'; font-size: 12px; color: rgb(0, 144, 161);
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%); pointer-events: none;
+        }
+
+        button {
+            width: 100%; padding: 15px; margin-top: 20px;
+            border-radius: 8px; border: none; background: rgb(0, 105, 145);
+            color: white; font-weight: bold; font-size: 16px; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 5px 15px rgba(0, 105, 145, 0.2);
+        }
+        button:hover { background: rgb(0, 144, 161); transform: translateY(-2px); }
+        
+        .hidden { display: none !important; }
+        .success-icon { font-size: 60px; color: rgb(0, 144, 161); margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="form-card">
+        <h2>Check-in</h2>
+        <p>Vui lòng điền tên của bạn</p>
+        
+        <form id="checkin-form">
+            <input type="text" id="name" placeholder="Họ và Tên (VD: Nguyen Van A)" required autocomplete="off">
+            
+            <div class="select-wrapper">
+                <select id="department">
+                    <option value="" selected>-- Chọn Bộ phận (Không bắt buộc) --</option>
+                    <option value="Anesthesiology">Anesthesiology</option>
+                    <option value="Biomedical">Biomedical</option>
+                    <option value="Customer Service">Customer Service</option>
+                    <option value="Diagnostic Imaging Department">Diagnostic Imaging Department</option>
+                    <option value="Emergency">Emergency</option>
+                    <option value="Facility Management">Facility Management</option>
+                    <option value="Finance & Accounting">Finance & Accounting</option>
+                    <option value="General Internal Medicine">General Internal Medicine</option>
+                    <option value="General Planing">General Planing</option>
+                    <option value="General Surgery">General Surgery</option>
+                    <option value="Hospital/Clinic/BUs BOM">Hospital/Clinic/BUs BOM</option>
+                    <option value="Human Resource">Human Resource</option>
+                    <option value="Infection Control">Infection Control</option>
+                    <option value="IT">IT</option>
+                    <option value="Laboratory">Laboratory</option>
+                    <option value="Nephrology">Nephrology</option>
+                    <option value="Nursing Management">Nursing Management</option>
+                    <option value="Obstetrics & Gynecology">Obstetrics & Gynecology</option>
+                    <option value="Operation">Operation</option>
+                    <option value="Outpatient">Outpatient</option>
+                    <option value="Pediatrics">Pediatrics</option>
+                    <option value="Pharmacy">Pharmacy</option>
+                    <option value="Procurement">Procurement</option>
+                    <option value="Quality Management">Quality Management</option>
+                    <option value="Rehabilitation & Physical Therapy">Rehabilitation & Physical Therapy</option>
+                    <option value="Sale & Marketing">Sale & Marketing</option>
+                    <option value="Support Service">Support Service</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submit-btn">XÁC NHẬN THAM GIA</button>
+        </form>
+        <div id="message" style="margin-top:15px; color: #d9534f; font-weight: bold;"></div>
+    </div>
+
+    <div class="card hidden" id="success-card">
+        <div class="success-icon">✓</div>
+        <h2>Đã đăng ký</h2>
+        <p>Tên của bạn đã được gửi lên hệ thống.</p>
+        <p style="font-size: 0.9em; color: #999;">(Mỗi máy chỉ được đăng ký 1 lần)</p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // 1. KIỂM TRA NGAY KHI VÀO TRANG
+        // Nếu máy này đã có 'flag' check-in trong localStorage -> Ẩn form luôn
+        if (localStorage.getItem('isCheckedIn') === 'true') {
+            $('#form-card').addClass('hidden');
+            $('#success-card').removeClass('hidden');
+        }
+
+        $('#checkin-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const nameVal = $('#name').val().trim();
+            if(!nameVal) {
+                $('#message').text('Vui lòng nhập họ tên!');
+                return;
+            }
+
+            const btn = $('#submit-btn');
+            btn.prop('disabled', true).text('Đang xử lý...');
+            $('#message').text('');
+            
+            $.ajax({
+                url: '/api/checkin/',
+                method: 'POST',
+                data: { 
+                    name: nameVal, 
+                    department: $('#department').val() // Có thể rỗng
+                },
+                success: function(res) {
+                    if (res.status === 'success') {
+                        // 2. LƯU TRẠNG THÁI VÀO MÁY KHÁCH
+                        localStorage.setItem('isCheckedIn', 'true');
+
+                        $('#form-card').addClass('hidden');
+                        $('#success-card').removeClass('hidden');
+                    } else {
+                        // Nếu server báo lỗi (VD: đã đăng ký rồi)
+                        if(res.message.includes("đã đăng ký")) {
+                            localStorage.setItem('isCheckedIn', 'true');
+                            $('#form-card').addClass('hidden');
+                            $('#success-card').removeClass('hidden');
+                        } else {
+                            $('#message').text(res.message);
+                            btn.prop('disabled', false).text('XÁC NHẬN THAM GIA');
+                        }
+                    }
+                },
+                error: function() {
+                    $('#message').text('Mất kết nối server, vui lòng thử lại.');
+                    btn.prop('disabled', false).text('XÁC NHẬN THAM GIA');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

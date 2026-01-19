@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Year End Party Lucky Draw</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f0f8ff;
+            --box-bg: #ffffff;
+            --text-color: rgb(0, 105, 145);
+            --accent-color: rgb(0, 144, 161);
+            --sub-text-color: #5d757c;
+            --dept-text-color: #99aabb;
+            --dynamic-font-size: 20px;
+        }
+
+        body {
+            background-color: var(--bg-color); color: var(--text-color);
+            font-family: 'Lexend', sans-serif;
+            margin: 0; height: 100vh; width: 100vw; overflow: hidden;
+            user-select: none;
+            background-color: #f4f7f6; /* Màu dự phòng nếu ảnh lỗi */
+            
+            /* Đường dẫn ảnh: Django sẽ map     /media/ tới thư mục media của bạn */
+            background-image: url('/media/Backdrop/Backdrop-Bp.jpg');
+            
+            /* Giúp ảnh luôn phủ kín màn hình */
+            background-size: cover; 
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+
+        }
+        body::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.2); 
+            z-index: -1;
+        }
+
+        #grid-wrapper {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            padding: 15px; box-sizing: border-box;
+        }
+
+        #grid-container { display: grid; gap: 6px; transition: all 0.3s ease; }
+
+        .user-box {
+            background: var(--box-bg);
+            border: 1px solid #daeef0;
+            border-radius: 6px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center;
+            padding: 2px 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            overflow: hidden; position: relative; line-height: 1.1;
+        }
+
+        .user-box .sub-name {
+            font-size: calc(var(--dynamic-font-size) * 0.45);
+            color: var(--sub-text-color); font-weight: 500;
+            white-space: nowrap; width: 100%; overflow: hidden; margin-bottom: 2px;
+        }
+
+        .user-box .real-name {
+            font-size: calc(var(--dynamic-font-size) * 1);
+            color: var(--text-color); font-weight: 850;
+            text-transform: uppercase; white-space: nowrap;
+        }
+
+        .user-box .dept-name {
+            font-size: calc(var(--dynamic-font-size) * 0.5);
+            color: var(--dept-text-color); white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; width: 95%; margin-top: 2px;
+        }
+
+        .user-box.highlight {
+            background-color: var(--accent-color) !important;
+            border: 3px solid #ffD700 !important;
+            transform: scale(1.5); z-index: 100;
+            box-shadow: 0 15px 40px rgba(0, 144, 161, 0.5);
+            justify-content: center;
+        }
+        .user-box.highlight .sub-name { color: #b3e5fc; font-weight: normal; }
+        .user-box.highlight .real-name { color: #ffffff; }
+        .user-box.highlight .dept-name { color: #e0f7fa; }
+
+        .user-box.winner-already { background-color: #f2f2f2 !important; border: 1px dashed #ccc !important; opacity: 0.5; }
+
+        /* Nút quay số */
+        #draggable-btn {
+            position: fixed; bottom: 40px; right: 40px; z-index: 500; cursor: move;
+            background: linear-gradient(135deg, var(--text-color), var(--accent-color));
+            color: white; border: 3px solid white; padding: 12px 35px;
+            font-size: 20px; font-weight: bold; border-radius: 50px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            display: flex; align-items: center; gap: 8px;
+        }
+        #draggable-btn:active { transform: scale(0.95); }
+        #draggable-btn:disabled { background: #999; cursor: not-allowed; opacity: 0.8; }
+
+        /* Sidebar */
+        #sidebar {
+            position: fixed; top: 0; left: 0; height: 100vh; width: 280px;
+            background: rgba(255,255,255,0.98); z-index: 400; transform: translateX(-100%); transition: 0.3s;
+            box-shadow: 5px 0 20px rgba(0,0,0,0.1); padding-top: 70px; display: flex; flex-direction: column;
+        }
+        #sidebar.open { transform: translateX(0); }
+        #toggle-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 410;
+            background: var(--accent-color); color: white; border: none;
+            width: 50px; height: 50px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 24px;
+        }
+        .prize-item { padding: 15px 20px; margin: 10px 15px; border: 1px solid #eee; border-radius: 12px; cursor: pointer; }
+        .prize-item.active { background: var(--accent-color); color: white; border-color: transparent; }
+        .prize-item.disabled { opacity: 0.6; background: #f5f5f5; cursor: not-allowed; }
+
+        #winner-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 999; flex-direction: column; align-items: center; justify-content: center; }
+        #winner-name { font-size: 7vh; font-weight: 900; color: var(--text-color); margin: 10px 0; text-align: center; text-transform: uppercase; }
+
+
+        /* ... các css cũ ... */
+
+/* Khi ở chế độ đông người (dense-mode) */
+        body.dense-mode .user-box .dept-name {
+            display: none; /* Ẩn luôn tên phòng ban */
+        }
+
+        body.dense-mode .user-box .real-name {
+            /* Tăng kích thước tên thật lên một chút vì giờ đã rộng chỗ */
+            font-size: calc(var(--dynamic-font-size) * 1.1); 
+            margin-top: 2px;
+        }
+
+        body.dense-mode .user-box .sub-name {
+            /* Giảm tên lót đi xíu hoặc giữ nguyên */
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="toggle-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+
+    <div id="sidebar">
+        <h3 style="text-align: center; color: var(--accent-color); margin-bottom:20px;">CHỌN GIẢI THƯỞNG</h3>
+        <div style="overflow-y:auto; flex:1; padding-bottom: 20px;">
+            {% for prize in prizes %}
+            <div class="prize-item {% if prize.remaining_count == 0 %}disabled{% endif %}" 
+                 id="prize-{{ prize.id }}" 
+                 onclick="selectPrize({{ prize.id }}, '{{ prize.name }}', {{ prize.remaining_count }})">
+                <div style="font-weight:bold; font-size:1.1em">{{ prize.name }}</div>
+                <div style="font-size:0.9em; margin-top:5px; display:flex; justify-content:space-between">
+                    <span>Còn lại:</span> <span id="count-{{ prize.id }}" style="font-weight:bold">{{ prize.remaining_count }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="grid-wrapper">
+        <div id="grid-container"></div>
+    </div>
+
+    <button id="draggable-btn" disabled>
+        <i class="fa-solid fa-play"></i> <span>CHỌN GIẢI</span>
+    </button>
+
+    <div id="winner-modal" onclick="closeModal()">
+        <h2 style="color:#888; font-size:3vh; margin:0; letter-spacing: 2px;">CHÚC MỪNG</h2>
+        <div id="modal-prize-name" style="color:var(--accent-color); font-size:4vh; font-weight:bold; margin-top:10px; margin-bottom: 20px;"></div>
+        <div id="winner-name">TÊN NGƯỜI THẮNG</div>
+        <div id="winner-dept" style="background:var(--accent-color); color:white; padding:10px 40px; border-radius:50px; font-size:2.5vh; margin-top: 20px;"></div>
+    </div>
+
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+const soundStart = new Audio('/media/sounds/start.mp3'); 
+    const soundTick = new Audio('/media/sounds/tick.m4a');
+    const soundWin = new Audio('/media/sounds/win.mp3');
+
+    // Cấu hình âm lượng
+    soundTick.volume = 1.0; 
+    soundWin.volume = 1.0;
+
+    // --- 2. CÁC HÀM XỬ LÝ TÊN & GRID ---
+    function splitName(fullName) {
+        if (!fullName) return { initials: "", fullSub: "", realName: "" };
+        const parts = fullName.trim().split(/\s+/);
+        if (parts.length === 1) return { initials: "", fullSub: "", realName: parts[0] };
+        const realName = parts.pop();
+        const fullSub = parts.join(" ");
+        let initials = ""; parts.forEach(part => { initials += part.charAt(0).toUpperCase() + "."; });
+        return { initials: initials, fullSub: fullSub, realName: realName };
+    }
+
+    function optimizeNames() {
+        document.querySelectorAll('.user-box .sub-name').forEach(el => {
+            const fullText = el.dataset.full; const shortText = el.dataset.short;
+            el.innerText = fullText;
+            if (el.scrollWidth > el.clientWidth) el.innerText = shortText;
+        });
+    }
+
+    // --- 3. XỬ LÝ KÉO THẢ NÚT ---
+    const btn = document.getElementById("draggable-btn");
+    let isDragging = false, hasMoved = false, offset = { x: 0, y: 0 };
+    btn.addEventListener('mousedown', function(e) { isDragging = true; hasMoved = false; offset.x = e.clientX - btn.getBoundingClientRect().left; offset.y = e.clientY - btn.getBoundingClientRect().top; btn.style.cursor = 'grabbing'; });
+    document.addEventListener('mousemove', function(e) { if (!isDragging) return; hasMoved = true; e.preventDefault(); btn.style.left = (e.clientX - offset.x) + 'px'; btn.style.top = (e.clientY - offset.y) + 'px'; btn.style.bottom = 'auto'; btn.style.right = 'auto'; });
+    document.addEventListener('mouseup', function() { isDragging = false; btn.style.cursor = 'move'; });
+    btn.addEventListener('click', function(e) { if (hasMoved) { e.preventDefault(); return; } startSpin(); });
+
+    // --- 4. TÍNH TOÁN LƯỚI ---
+    function calculateGrid(totalItems) {
+        if (totalItems === 0) return;
+        const wrapper = document.getElementById('grid-wrapper');
+        const W = wrapper.clientWidth - 20; 
+        const H = wrapper.clientHeight - 20;
+
+        let bestCols = 1; let bestRows = 1;
+        let minEmptySpace = Infinity; let bestRatioScore = Infinity;
+        const TARGET_RATIO = 1.45;
+
+        let startCol = Math.max(1, Math.floor(Math.sqrt(totalItems) * 0.4));
+        let endCol = Math.ceil(Math.sqrt(totalItems) * 2.0) + 2;
+
+        for (let c = startCol; c <= endCol; c++) {
+            let r = Math.ceil(totalItems / c);
+            let cellW = W / c; let cellH = H / r;
+            let currentRatio = cellW / cellH;
+
+            if (currentRatio < 1.0) continue;
+            if (currentRatio > 2.0) continue;
+
+            let emptySpaces = (c * r) - totalItems;
+            let ratioDiff = Math.abs(currentRatio - TARGET_RATIO);
+
+            if (emptySpaces < minEmptySpace) {
+                minEmptySpace = emptySpaces; bestRatioScore = ratioDiff; bestCols = c; bestRows = r;
+            } else if (emptySpaces === minEmptySpace) {
+                if (ratioDiff < bestRatioScore) {
+                    bestRatioScore = ratioDiff; bestCols = c; bestRows = r;
+                }
+            }
+        }
+        
+        const container = document.getElementById('grid-container');
+        container.style.gridTemplateColumns = `repeat(${bestCols}, 1fr)`;
+        container.style.gridTemplateRows = `repeat(${bestRows}, 1fr)`;
+        container.style.width = '100%'; container.style.height = '100%';
+
+        let cellH = H / bestRows;
+        let fontMultiplier;
+        let hideDepartment = false;
+        
+        if (totalItems <= 60) { fontMultiplier = 0.45; } 
+        else if (totalItems <= 120) { fontMultiplier = 0.35; } 
+        else if (totalItems <= 200) { fontMultiplier = 0.28; } 
+        else { fontMultiplier = 0.32; hideDepartment = true; }
+
+        if (hideDepartment) document.body.classList.add('dense-mode');
+        else document.body.classList.remove('dense-mode');
+
+        let fontSize = Math.max(12, Math.min(cellH * fontMultiplier, 80));
+        document.documentElement.style.setProperty('--dynamic-font-size', fontSize + 'px');
+    }
+
+    // --- 5. LOAD DỮ LIỆU ---
+    let users = []; let isSpinning = false; let selectedPrizeId = null;
+    function loadUsers() {
+        if(isSpinning) return;
+        $.get('/api/get_participants/', function(data) {
+            if (data.users.length !== users.length || JSON.stringify(data.users) !== JSON.stringify(users)) {
+                users = data.users;
+                calculateGrid(users.length);
+                renderGrid();
+                setTimeout(optimizeNames, 50);
+            }
+        });
+    }
+    window.addEventListener('resize', () => { if(users.length) { calculateGrid(users.length); renderGrid(); setTimeout(optimizeNames, 50); } });
+    loadUsers(); setInterval(loadUsers, 3000);
+
+    function renderGrid() {
+        const container = $('#grid-container'); container.empty();
+        if(users.length === 0) { container.html('<h2 style="position:absolute;color:#ccc;width:100%;text-align:center">Waiting for check-in...</h2>'); return; }
+        users.forEach(u => {
+            const className = u.is_winner ? 'user-box winner-already' : 'user-box';
+            const nameObj = splitName(u.name);
+            container.append(`
+                <div class="${className}" id="user-${u.id}">
+                    <div class="sub-name" data-full="${nameObj.fullSub}" data-short="${nameObj.initials}">${nameObj.fullSub}</div>
+                    <div class="real-name">${nameObj.realName}</div>
+                    <div class="dept-name">${u.department || ''}</div>
+                </div>
+            `);
+        });
+    }
+
+    // --- 6. LOGIC GAME & HIỆU ỨNG ---
+    function toggleSidebar() { $('#sidebar').toggleClass('open'); const icon = $('#sidebar').hasClass('open') ? 'fa-xmark' : 'fa-bars'; $('#toggle-btn i').attr('class', `fa-solid ${icon}`); }
+    
+    function selectPrize(id, name, remaining) {
+        if (isSpinning || remaining <= 0) return;
+        $('.prize-item').removeClass('active'); $(`#prize-${id}`).addClass('active'); selectedPrizeId = id; $('#draggable-btn span').text(`QUAY: ${name}`); $('#draggable-btn').prop('disabled', false); if($('#sidebar').hasClass('open')) toggleSidebar();
+    }
+
+    function startSpin() {
+        if (!selectedPrizeId) { alert("Chưa chọn giải!"); return; } if (isSpinning) return;
+        const availableUsers = users.filter(u => !u.is_winner); if(availableUsers.length === 0) { alert("Hết người để quay!"); return; }
+        
+        isSpinning = true; $('#draggable-btn').prop('disabled', true); $('#draggable-btn span').text('...');
+        
+        // Gọi API
+        $.post('/api/draw_winner/', { prize_id: selectedPrizeId }, function(data) {
+            if(data.status === 'error') { alert(data.message); resetSpinState(); return; }
+            
+            $(`#count-${selectedPrizeId}`).text(data.remaining); 
+            $(`#prize-${selectedPrizeId}`).attr('onclick', `selectPrize(${selectedPrizeId}, '${data.winner.prize_name}', ${data.remaining})`); 
+            if (data.remaining <= 0) $(`#prize-${selectedPrizeId}`).addClass('disabled').removeClass('active');
+            
+            const winnerID = data.winner.id; 
+            const $availableElements = $('.user-box').not('.winner-already');
+            
+            // --- CẤU HÌNH 4 GIÂY ---
+            let speed = 40;        
+            let totalSteps = 50;   
+            let currentStep = 0;
+            
+            // CHƠI NHẠC NỀN
+            soundTick.currentTime = 0;
+            soundTick.volume = 1.0; 
+            soundTick.play(); 
+
+            function runEffect() {
+                $('.user-box').removeClass('highlight'); 
+                const randomIndex = Math.floor(Math.random() * $availableElements.length); 
+                const $el = $($availableElements[randomIndex]); 
+                $el.addClass('highlight');
+                
+                currentStep++; 
+                
+                if (currentStep < totalSteps) { 
+                    // Chậm dần từ 70% quãng đường
+                    if (currentStep > totalSteps * 0.70) {
+                        speed += 25; 
+                    }
+                    setTimeout(runEffect, speed); 
+                } else {
+                    // --- KẾT THÚC ---
+                    soundTick.pause(); 
+                    soundTick.currentTime = 0;
+
+                    $('.user-box').removeClass('highlight'); 
+                    const $winnerEl = $(`#user-${winnerID}`); 
+                    $winnerEl.addClass('highlight'); 
+                    $winnerEl.find('.sub-name').text($winnerEl.find('.sub-name').data('full'));
+                    
+                    setTimeout(() => { 
+                        showWinnerModal(data.winner.name, data.winner.department, data.winner.prize_name); 
+                    }, 1000);
+                }
+            } 
+            runEffect();
+            
+        }).fail(() => { alert("Lỗi kết nối server!"); resetSpinState(); });
+    }
+
+    function showWinnerModal(name, dept, prizeName) { 
+        // Nhạc chiến thắng
+        soundWin.currentTime = 0;
+        soundWin.play();
+
+        $('#modal-prize-name').text(prizeName); 
+        $('#winner-name').text(name); 
+        $('#winner-dept').text(dept || ''); 
+        $('#winner-modal').css('display', 'flex'); 
+        
+        // Hiệu ứng kép: Pháo hoa + Pháo giấy
+        runFireworks();
+        confetti({ particleCount: 400, spread: 160, origin: { y: 0.6 },zIndex: 9999, colors: ['#0090a1', '#a2dadd', '#ffD700'] }); 
+    }
+
+    function closeModal() { 
+        soundWin.pause();
+        soundWin.currentTime = 0;
+
+        $('#winner-modal').fadeOut(300); 
+        const c = parseInt($(`#count-${selectedPrizeId}`).text()); 
+        if (c > 0) { 
+            isSpinning = false; $('.user-box').removeClass('highlight'); $('#draggable-btn').prop('disabled', false); 
+            const pName = $(`#prize-${selectedPrizeId} div:first-child`).text(); 
+            $('#draggable-btn span').text(`TIẾP: ${pName}`); 
+        } else { resetSpinState(); toggleSidebar(); } 
+        loadUsers();
+    }
+
+    function resetSpinState() { isSpinning = false; $('.user-box').removeClass('highlight'); $('#draggable-btn').prop('disabled', true); $('#draggable-btn span').text('CHỌN GIẢI'); selectedPrizeId = null; }
+
+    // --- CÁC HÀM PHỤ TRỢ CHO PHÁO HOA ---
+    function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+// --- HÀM TẠO HIỆU ỨNG PHÁO HOA: BẮN TỪ DƯỚI LÊN & RƠI CHẬM ---
+    function runFireworks() {
+        // Thời gian kéo dài hiệu ứng (ví dụ 5 giây)
+        var duration = 5 * 1000;
+        var animationEnd = Date.now() + duration;
+        
+        // Cấu hình chung cho các hạt pháo
+        var defaults = { 
+            startVelocity: 80,    // Bắn mạnh để bay lên cao
+            spread: 70,           // Góc tỏa ra vừa phải để tạo hình chùm
+            ticks: 400,           // Tồn tại lâu để kịp rơi xuống đất
+            gravity: 0.5,         // <--- QUAN TRỌNG: Trọng lực thấp để rơi chậm
+            zIndex: 9999,         // Hiện trên Modal
+            shapes: ['square', 'circle', 'star'], 
+            colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffD700', '#ffffff', '#ff8c00'],
+            scalar: 1.2           // Kích thước hạt to hơn một chút nhìn cho đã
+        };
+
+        // Vòng lặp bắn liên tục
+        var interval = setInterval(function() {
+            var timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            // Số lượng hạt mỗi lần bắn (khoảng 40-60 hạt)
+            var particleCount = randomInRange(40, 60);
+            
+            // --- DÀN PHÁO SỐ 1: Bắn từ góc DƯỚI TRÁI sang phải ---
+            confetti(Object.assign({}, defaults, { 
+                particleCount: particleCount,
+                angle: 60, // Góc 60 độ (hướng lên và sang phải)
+                origin: { x: 0, y: 1 } // Xuất phát từ góc dưới trái
+            }));
+
+            // --- DÀN PHÁO SỐ 2: Bắn từ góc DƯỚI PHẢI sang trái ---
+            confetti(Object.assign({}, defaults, { 
+                particleCount: particleCount,
+                angle: 120, // Góc 120 độ (hướng lên và sang trái)
+                origin: { x: 1, y: 1 } // Xuất phát từ góc dưới phải
+            }));
+            
+             // --- (Tùy chọn) DÀN PHÁO SỐ 3: Bắn thẳng từ DƯỚI GIỮA lên ---
+             if (Math.random() > 0.5) { // Thỉnh thoảng mới bắn thêm dàn giữa cho đỡ rối
+                confetti(Object.assign({}, defaults, { 
+                    particleCount: particleCount / 2,
+                    angle: 90, // Góc 90 độ (thẳng đứng)
+                    spread: 90,
+                    startVelocity: 85, // Bắn cao hơn 2 bên
+                    origin: { x: 0.5, y: 1 } 
+                }));
+             }
+
+        }, 200); // Cứ 200ms bắn một đợt
+    }
+    function closeModal() { 
+        // Dừng nhạc thắng khi đóng modal
+        soundWin.pause();
+        soundWin.currentTime = 0;
+
+        $('#winner-modal').fadeOut(300); 
+        const c = parseInt($(`#count-${selectedPrizeId}`).text()); 
+        if (c > 0) { 
+            isSpinning = false; $('.user-box').removeClass('highlight'); $('#draggable-btn').prop('disabled', false); 
+            const pName = $(`#prize-${selectedPrizeId} div:first-child`).text(); 
+            $('#draggable-btn span').text(`TIẾP: ${pName}`); 
+        } else { resetSpinState(); toggleSidebar(); } 
+        loadUsers();
+    }
+
+    function resetSpinState() { isSpinning = false; $('.user-box').removeClass('highlight'); $('#draggable-btn').prop('disabled', true); $('#draggable-btn span').text('CHỌN GIẢI'); selectedPrizeId = null; }
+</script>
+</body>
+</html>
