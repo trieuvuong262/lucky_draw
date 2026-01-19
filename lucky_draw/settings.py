@@ -69,7 +69,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'trieuvuong1997$lucky_draw',        # <--- Thay tên DB đầy đủ của bạn
         'USER': 'trieuvuong1997',                   # <--- Thay username của bạn
-        'PASSWORD': '123123',    # <--- Thay mật khẩu DB của bạn
+        'PASSWORD': '123123@',    # <--- Thay mật khẩu DB của bạn
         'HOST': 'trieuvuong1997.mysql.pythonanywhere-services.com', # <--- QUAN TRỌNG NHẤT: Copy y nguyên dòng Database host address
         'PORT': '3306',
     }
