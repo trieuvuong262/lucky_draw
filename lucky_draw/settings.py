@@ -67,10 +67,10 @@ WSGI_APPLICATION = 'lucky_draw.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'lucky_draw_db',
-        'USER': 'root',
-        'PASSWORD': '123123',
-        'HOST': 'localhost',
+        'NAME': 'trieuvuong1997$lucky_draw',        # <--- Thay tên DB đầy đủ của bạn
+        'USER': 'trieuvuong1997',                   # <--- Thay username của bạn
+        'PASSWORD': 'mat_khau_database_cua_ban',    # <--- Thay mật khẩu DB của bạn
+        'HOST': 'trieuvuong1997.mysql.pythonanywhere-services.com', # <--- QUAN TRỌNG NHẤT: Copy y nguyên dòng Database host address
         'PORT': '3306',
     }
 }
