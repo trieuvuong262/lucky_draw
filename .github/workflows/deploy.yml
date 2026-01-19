@@ -19,21 +19,11 @@ jobs:
         password: ${{ secrets.PA_PASSWORD }}
         key: ${{ secrets.PA_SSH_KEY }}
         script: |
-          # 1. Vào thư mục
-          cd ~/lucky_draw
-          
-          # 2. Lấy code mới
-          git pull
-          
-          # 3. Cài thư viện (Lưu ý: dùng --user vì không có virtualenv)
-          pip install --user -r requirements.txt
-          
-          # 4. Cập nhật DB & Static file
-          python manage.py migrate
-          python manage.py collectstatic --noinput
-          
-          # 5. Reload web (Thay tên file WSGI cho đúng)
-          # Lưu ý: Tên file thường là: ten_nick_pythonanywhere_com_wsgi.py
-          # Bạn có thể dùng lệnh này để tự động tìm và touch file đó:
-          touch /var/www/*_wsgi.py
-
+                  cd ~/lucky_draw
+                  # Hủy bỏ thay đổi cục bộ để tránh conflict
+                  git reset --hard origin/main
+                  git pull
+                  pip install --user -r requirements.txt
+                  python manage.py migrate
+                  python manage.py collectstatic --noinput
+                  touch /var/www/*_wsgi.py
