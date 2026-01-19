@@ -123,3 +123,7 @@ MEDIA_URL = '/media/'
 
 # Đường dẫn thư mục thực tế trên máy tính
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_URL = 'static/'
+
+# THÊM DÒNG NÀY VÀO:
+STATIC_ROOT = BASE_DIR / 'static'
