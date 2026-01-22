@@ -46,9 +46,9 @@ def api_checkin(request):
     return JsonResponse({'status': 'error'})
 @csrf_exempt
 def api_draw_winner(request):
-    global IS_CHECKIN_LOCKED 
+    # global IS_CHECKIN_LOCKED 
     if request.method == 'POST':
-        IS_CHECKIN_LOCKED = True 
+        # IS_CHECKIN_LOCKED = True 
         prize_id = request.POST.get('prize_id')
         try:
             prize = Prize.objects.get(id=prize_id)
@@ -72,7 +72,8 @@ def api_draw_winner(request):
                 'id': winner.id,
                 'name': winner.name,
                 'department': winner.department,
-                'prize_name': prize.name
+                'prize_name': prize.name,
+                'is_on_duty': winner.is_on_duty
             }
         })
     return JsonResponse({'status': 'error'})
@@ -80,3 +81,24 @@ def api_unlock_checkin(request):
     global IS_CHECKIN_LOCKED
     IS_CHECKIN_LOCKED = False
     return JsonResponse({'status': 'success', 'message': 'Đã mở lại cổng Check-in!'})
+
+@csrf_exempt
+def api_toggle_checkin(request):
+    global IS_CHECKIN_LOCKED
+    if request.method == 'POST':
+        action = request.POST.get('action') # Nhận lệnh 'lock' hoặc 'unlock'
+        
+        if action == 'lock':
+            IS_CHECKIN_LOCKED = True
+            message = "Đã ĐÓNG cổng Check-in. Không ai có thể vào được nữa."
+        elif action == 'unlock':
+            IS_CHECKIN_LOCKED = False
+            message = "Đã MỞ cổng Check-in. Mọi người có thể tiếp tục đăng ký."
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Lệnh không hợp lệ'})
+            
+        return JsonResponse({
+            'status': 'success', 
+            'message': message, 
+            'is_locked': IS_CHECKIN_LOCKED
+        })

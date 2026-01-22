@@ -7,4 +7,5 @@ urlpatterns = [
     path('api/get_participants/', views.api_get_participants, name='get_users'),
     path('api/draw_winner/', views.api_draw_winner, name='draw'),
     path('api/unlock_checkin/', views.api_unlock_checkin, name='api_unlock_checkin'),
+    path('api/toggle_checkin/', views.api_toggle_checkin, name='toggle_checkin'),
 ]

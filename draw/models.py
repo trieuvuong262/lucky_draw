@@ -10,6 +10,7 @@ class Prize(models.Model):
 class Participant(models.Model):
     name = models.CharField(max_length=100)
     department = models.CharField(max_length=100, blank=True)
+    is_on_duty = models.BooleanField(default=False, verbose_name="Đang trực")
     is_winner = models.BooleanField(default=False)
     checkin_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     won_prize = models.ForeignKey(Prize, on_delete=models.SET_NULL, null=True, blank=True)

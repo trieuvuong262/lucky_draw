@@ -95,7 +95,7 @@
         #sidebar {
             position: fixed; top: 0; left: 0; height: 100vh; width: 280px;
             background: rgba(255,255,255,0.98); z-index: 400; transform: translateX(-100%); transition: 0.3s;
-            box-shadow: 5px 0 20px rgba(0,0,0,0.1); padding-top: 70px; display: flex; flex-direction: column;
+            box-shadow: 5px 0 20px rgba(0,0,0,0.1); padding-top: 70px; display: flex; flex-direction: column;box-sizing: border-box;
         }
         #sidebar.open { transform: translateX(0); }
         #toggle-btn {
@@ -133,6 +133,62 @@
             /* Giảm tên lót đi xíu hoặc giữ nguyên */
             margin-bottom: 0;
         }
+        #admin-controls {
+            padding: 20px;
+            margin-top: auto; 
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+        }
+
+        .ctrl-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            font-family: 'Lexend', sans-serif;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .ctrl-btn:active { transform: scale(0.95); }
+
+        /* Trạng thái nút khi cổng đang Mở (Màu đỏ để cảnh báo bấm vào sẽ đóng) */
+        .btn-close { 
+            color: rgba(0, 0, 0, 0.5); 
+            border: 2px solid rgba(0, 144, 161, 0.5);
+        }
+
+        /* Trạng thái nút khi cổng đang Đóng (Màu xanh để bấm vào sẽ mở) */
+        .btn-open { 
+            color: rgba(0, 0, 0, 0.5); 
+            border: 2px solid rgba(0, 144, 161, 0.5);
+        }
+        #winner-status {
+            background: #dc3545; /* Màu đỏ báo hiệu */
+            color: white;
+            padding: 8px 30px;
+            border-radius: 8px;
+            font-size: 2.5vh;
+            font-weight: bold;
+            margin-top: 15px; /* Cách dòng Department 1 chút */
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+            animation: pulse 1.5s infinite; /* Hiệu ứng nhấp nháy nhẹ cho chú ý */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Hiệu ứng nhịp đập cho chữ TRỰC */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -151,6 +207,15 @@
             </div>
             {% endfor %}
         </div>
+        <div id="admin-controls">
+            <div style="font-size: 14px; color: #666; margin-bottom: 10px; text-align: center; font-weight:bold;">
+                TRẠNG THÁI CHECK IN
+            </div>
+            <button id="gate-toggle-btn" onclick="handleClickToggle()" class="ctrl-btn btn-close">
+                <i class="fa-solid fa-lock-open"></i> ĐANG MỞ
+            </button>
+        </div>
+    </div>
     </div>
     <div id="grid-wrapper">
         <div id="grid-container"></div>
@@ -163,6 +228,7 @@
         <div id="modal-prize-name" style="color:var(--accent-color); font-size:4vh; font-weight:bold; margin-top:10px; margin-bottom: 20px;"></div>
         <div id="winner-name">TÊN NGƯỜI THẮNG</div>
         <div id="winner-dept" style="background:var(--accent-color); color:white; padding:10px 40px; border-radius:50px; font-size:2.5vh; margin-top: 20px;"></div>
+        <div id="winner-status" style="display: none;">ĐANG TRỰC</div>    
     </div>
    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -317,19 +383,28 @@ const soundStart = new Audio('/media/sounds/start.mp3');
                     $winnerEl.addClass('highlight'); 
                     $winnerEl.find('.sub-name').text($winnerEl.find('.sub-name').data('full'));
                     setTimeout(() => { 
-                        showWinnerModal(data.winner.name, data.winner.department, data.winner.prize_name); 
+                    showWinnerModal(data.winner.name, data.winner.department, data.winner.prize_name, data.winner.is_on_duty); 
                     }, 1000);
                 }
             } 
             runEffect();
         }).fail(() => { alert("Lỗi kết nối server!"); resetSpinState(); });
     }
-    function showWinnerModal(name, dept, prizeName) { 
+    function showWinnerModal(name, dept, prizeName, isOnDuty) { // Thêm tham số isOnDuty
         soundWin.currentTime = 0;
         soundWin.play();
         $('#modal-prize-name').text(prizeName); 
         $('#winner-name').text(name); 
         $('#winner-dept').text(dept || ''); 
+        
+        // --- XỬ LÝ TRẠNG THÁI TRỰC ---
+        if (isOnDuty) {
+            $('#winner-status').show(); // Nếu trực thì hiện
+        } else {
+            $('#winner-status').hide(); // Không trực thì ẩn
+        }
+        // -----------------------------
+
         $('#winner-modal').css('display', 'flex'); 
         runFireworks();
         confetti({ particleCount: 400, spread: 160, origin: { y: 0.6 },zIndex: 9999, colors: ['#0090a1', '#a2dadd', '#ffD700'] }); 
@@ -486,6 +561,73 @@ const soundStart = new Audio('/media/sounds/start.mp3');
         });
     }
     const oldTabEvent = document.onkeydown; 
+
+// Hàm gọi API đóng/mở cổng
+function toggleCheckinGate(action) {
+    if (!confirm(action === 'lock' ? 'Bạn muốn ĐÓNG cổng check-in?' : 'Bạn muốn MỞ cổng check-in?')) {
+        return;
+    }
+
+    $.post('/api/toggle_checkin/', { action: action }, function(data) {
+        if (data.status === 'success') {
+            alert(data.message);
+            // Có thể thêm hiệu ứng đổi màu nút nếu muốn
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    }).fail(function() {
+        alert('Không kết nối được tới server!');
+    });
+}
+// Thêm vào trong thẻ <script>
+
+// Biến theo dõi trạng thái hiện tại (Mặc định khi load trang là Mở - False)
+let isGateLocked = false; 
+
+function renderGateButton() {
+    const btn = $('#gate-toggle-btn');
+    if (isGateLocked) {
+        // Nếu đang KHÓA -> Hiển thị giao diện MỞ
+        btn.removeClass('btn-close').addClass('btn-open');
+        btn.html('<i class="fa-solid fa-lock"></i> ĐANG ĐÓNG');
+    } else {
+        // Nếu đang MỞ -> Hiển thị giao diện ĐÓNG
+        btn.removeClass('btn-open').addClass('btn-close');
+        btn.html('<i class="fa-solid fa-lock-open"></i> ĐANG MỞ');
+    }
+}
+
+function handleClickToggle() {
+    // Xác định hành động: Nếu đang khóa thì gửi lệnh unlock, ngược lại gửi lock
+    const action = isGateLocked ? 'unlock' : 'lock';
+    
+    // Disable nút tạm thời để tránh bấm liên tục
+    $('#gate-toggle-btn').prop('disabled', true).css('opacity', 0.5);
+
+    $.post('/api/toggle_checkin/', { action: action }, function(data) {
+        if (data.status === 'success') {
+            // Cập nhật trạng thái mới
+            isGateLocked = (action === 'lock');
+            renderGateButton();
+            // alert(data.message); // Có thể bỏ alert nếu thấy phiền
+        } else {
+            alert('Lỗi Server: ' + data.message);
+        }
+    })
+    .fail(function(xhr, status, error) {
+        console.error(error);
+        alert('Lỗi kết nối Server! Kiểm tra lại urls.py hoặc mạng.');
+    })
+    .always(function() {
+        // Mở lại nút bấm
+        $('#gate-toggle-btn').prop('disabled', false).css('opacity', 1);
+    });
+}
+
+// Gọi 1 lần khi trang vừa tải để nút hiển thị đúng
+$(document).ready(function() {
+    renderGateButton();
+});
 </script>
 </body>
 </html>

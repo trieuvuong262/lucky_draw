@@ -3,7 +3,8 @@ import django
 import random
 
 # Thiết lập môi trường Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'lucky_draw.settings') # Thay 'lucky_draw' bằng tên folder dự án của bạn nếu khác
+# Thay 'lucky_draw' bằng tên folder dự án chứa settings.py của bạn
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'lucky_draw.settings') 
 django.setup()
 
 from draw.models import Participant
@@ -21,14 +22,17 @@ departments = [
     "Procurement", "Quality Management", "Rehabilitation & Physical Therapy",
     "Sale & Marketing", "Support Service"
 ]
+
 def generate_data(n=250):
     print("Đang xóa dữ liệu cũ...")
-    # Xóa hết dữ liệu cũ để test cho sạch (tùy chọn)
+    # Xóa hết dữ liệu cũ để test cho sạch
     Participant.objects.all().delete()
     
     print(f"Đang tạo {n} người dùng mẫu...")
     
     users = []
+    count_truc = 0 # Đếm xem có bao nhiêu người trực
+    
     for i in range(n):
         # Random tên
         ho = random.choice(ho_list)
@@ -39,12 +43,25 @@ def generate_data(n=250):
         # Random bộ phận
         dept = random.choice(departments)
         
-        # Tạo đối tượng (nhưng chưa lưu vào DB ngay để dùng bulk_create cho nhanh)
-        users.append(Participant(name=full_name, department=dept))
+        # --- LOGIC MỚI: Random trạng thái TRỰC ---
+        # random.random() trả về số từ 0.0 đến 1.0
+        # < 0.15 nghĩa là khoảng 15% cơ hội sẽ là True (Đang trực)
+        dang_truc = random.random() < 0.15 
+        
+        if dang_truc:
+            count_truc += 1
 
-    # Lưu 1 lần vào DB (Tốc độ cực nhanh)
+        # Tạo đối tượng
+        users.append(Participant(
+            name=full_name, 
+            department=dept,
+            is_on_duty=dang_truc  # <-- Gán giá trị vào đây
+        ))
+
+    # Lưu 1 lần vào DB
     Participant.objects.bulk_create(users)
     print(f"✅ Đã tạo thành công {n} nhân viên!")
+    print(f"   - Trong đó có {count_truc} người ĐANG TRỰC ({round(count_truc/n*100, 1)}%)")
 
 if __name__ == "__main__":
-    generate_data(200) # Bạn muốn tạo 300 người cho đầy màn hình thì sửa số này
+    generate_data(200) # Tạo 200 người
